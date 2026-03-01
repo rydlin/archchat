@@ -1,18 +1,18 @@
 # archchat
 
-Archive AI chat conversations from your clipboard into a structured Obsidian vault.
+Archive AI chat conversations from your clipboard into structured Markdown files.
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Platform: Linux/Wayland](https://img.shields.io/badge/Platform-Linux%2FWayland-brightgreen.svg)
 ![Shell: Bash](https://img.shields.io/badge/Shell-Bash-yellow.svg)
 
-archchat is a command-line tool for Wayland desktops that takes an AI chat conversation from your clipboard and saves it as a structured Markdown file in your Obsidian vault. It auto-detects the AI platform, generates YAML frontmatter, and organizes files by project and topic — making your AI conversations searchable, taggable, and queryable with Obsidian Dataview.
+archchat is a command-line tool for Wayland desktops that takes an AI chat conversation from your clipboard and saves it as a structured Markdown file with YAML frontmatter. It auto-detects the AI platform and organizes files by project and topic. The output is plain Markdown written to any directory you choose — no specific tool is required to read it. That said, archchat is designed with [Obsidian](https://obsidian.md) in mind, where the frontmatter fields work as Properties and pair well with the Dataview plugin for querying and dashboarding your conversations.
 
 ## How It Works
 
 1. **Export a chat** from any supported AI platform using the [YourAIScroll](docs/youraiscroll.md) browser extension. This copies the conversation to your clipboard in Markdown format with `Original URL: <url>` as the first line.
 2. **Run `archchat`** in your terminal with a project/topic path.
-3. **archchat reads the clipboard**, detects the AI agent from the URL domain, resolves the target directory (case-insensitively matching existing folders), generates a deterministic filename, and writes a structured Markdown file with YAML frontmatter into your Obsidian vault.
+3. **archchat reads the clipboard**, detects the AI agent from the URL domain, resolves the target directory (case-insensitively matching existing folders), generates a deterministic filename, and writes a structured Markdown file with YAML frontmatter into your target directory.
 
 ## Requirements
 
@@ -20,8 +20,8 @@ archchat is a command-line tool for Wayland desktops that takes an AI chat conve
 - `bash` >= 4.0
 - `wl-clipboard` (provides `wl-paste`)
 - `sha256sum` (coreutils)
-- An Obsidian vault
 - [YourAIScroll](docs/youraiscroll.md) browser extension (Chrome/Firefox/Edge)
+- [Obsidian](https://obsidian.md) (recommended, but any directory works)
 
 ## Step 1: Install YourAIScroll
 
@@ -34,19 +34,19 @@ See [docs/youraiscroll.md](docs/youraiscroll.md) for full installation and usage
 ## Step 2: Install archchat
 
 ```bash
-git clone https://github.com/neolit123/archchat.git
+git clone https://github.com/rydlin/archchat.git
 cd archchat
 bash install.sh
 ```
 
-Then set the environment variable pointing to your Obsidian vault:
+Then set the environment variable pointing to your target directory (e.g., an Obsidian vault):
 
 ```bash
 # Add to ~/.bashrc or ~/.profile
 export OBSIDIAN_AICHATS="$HOME/Documents/obsidian-vault/AIChats"
 ```
 
-Adjust the path to match your vault location. If not set, archchat defaults to `~/Obsidian/AI Chats`.
+Adjust the path to match your directory. If not set, archchat defaults to `~/Obsidian/AI Chats`.
 
 ## Usage
 
@@ -140,7 +140,7 @@ SORT date DESC
 bash uninstall.sh
 ```
 
-This removes `~/bin/archchat`. Your archived chat files in the Obsidian vault are not affected.
+This removes `~/bin/archchat`. Your archived chat files are not affected.
 
 ## Contributing
 
