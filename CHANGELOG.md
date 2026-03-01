@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [Semantic Versioning](https://semver.org).
 
+## [1.1.0] - 2026-03-01
+
+### Added
+
+- X11 clipboard support via `xclip`
+- macOS clipboard support via `pbpaste`
+- Auto-detection of display server (macOS, Wayland, X11) for clipboard access
+
+### Changed
+
+- `archchat`: clipboard command is now auto-detected instead of hardcoded `wl-paste`
+- `install.sh`: dependency check now validates the clipboard tool for the current platform
+- Updated README, issue template, and PR template to reflect cross-platform support
+
 ## [1.0.0] - 2026-03-01
 
 ### Added

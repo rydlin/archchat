@@ -18,10 +18,28 @@ fi
 
 SUBFOLDER="$1"
 
+# ── Detect clipboard command ──────────────────────────────────────────────────
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    PASTE_CMD="pbpaste"
+elif [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
+    PASTE_CMD="wl-paste"
+else
+    PASTE_CMD="xclip -selection clipboard -o"
+fi
+
+if ! command -v "${PASTE_CMD%% *}" &>/dev/null; then
+    echo "Error: ${PASTE_CMD%% *} not found."
+    echo "Install a clipboard tool for your platform:"
+    echo "  Wayland: wl-clipboard (wl-paste)"
+    echo "  X11:     xclip"
+    echo "  macOS:   pbpaste (included with macOS)"
+    exit 1
+fi
+
 # ── Get clipboard content ─────────────────────────────────────────────────────
-CONTENT="$(wl-paste 2>/dev/null)"
+CONTENT="$($PASTE_CMD 2>/dev/null)"
 if [[ $? -ne 0 || -z "$CONTENT" ]]; then
-    echo "Error: wl-paste failed or clipboard is empty."
+    echo "Error: clipboard is empty or ${PASTE_CMD%% *} failed."
     exit 1
 fi
 

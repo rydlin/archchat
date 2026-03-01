@@ -3,10 +3,10 @@
 Archive AI chat conversations from your clipboard into structured Markdown files.
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Platform: Linux/Wayland](https://img.shields.io/badge/Platform-Linux%2FWayland-brightgreen.svg)
+![Platform: Linux/macOS](https://img.shields.io/badge/Platform-Linux%2FmacOS-brightgreen.svg)
 ![Shell: Bash](https://img.shields.io/badge/Shell-Bash-yellow.svg)
 
-archchat is a command-line tool for Wayland desktops that takes an AI chat conversation from your clipboard and saves it as a structured Markdown file with YAML frontmatter. It auto-detects the AI platform and organizes files by project and topic. The output is plain Markdown written to any directory you choose — no specific tool is required to read it. That said, archchat is designed with [Obsidian](https://obsidian.md) in mind, where the frontmatter fields work as Properties and pair well with the Dataview plugin for querying and dashboarding your conversations.
+archchat is a command-line tool that takes an AI chat conversation from your clipboard and saves it as a structured Markdown file with YAML frontmatter. It auto-detects the AI platform and organizes files by project and topic. The output is plain Markdown written to any directory you choose — no specific tool is required to read it. That said, archchat is designed with [Obsidian](https://obsidian.md) in mind, where the frontmatter fields work as Properties and pair well with the Dataview plugin for querying and dashboarding your conversations.
 
 ## How It Works
 
@@ -16,9 +16,12 @@ archchat is a command-line tool for Wayland desktops that takes an AI chat conve
 
 ## Requirements
 
-- Linux with a Wayland compositor
+- Linux (Wayland or X11) or macOS
 - `bash` >= 4.0
-- `wl-clipboard` (provides `wl-paste`)
+- A clipboard tool (auto-detected):
+  - **Wayland**: `wl-clipboard` (provides `wl-paste`)
+  - **X11**: `xclip`
+  - **macOS**: `pbpaste` (included with macOS)
 - `sha256sum` (coreutils)
 - [YourAIScroll](docs/youraiscroll.md) browser extension (Chrome/Firefox/Edge)
 - [Obsidian](https://obsidian.md) (recommended, but any directory works)
@@ -146,7 +149,7 @@ This removes `~/bin/archchat`. Your archived chat files are not affected.
 
 Contributions are welcome. Fork the repository, create a feature branch, and open a pull request. See the [pull request template](.github/PULL_REQUEST_TEMPLATE.md) for the checklist.
 
-The script intentionally has no dependencies beyond `bash` and `wl-clipboard` — please do not introduce new external dependencies without discussion.
+The script intentionally has no dependencies beyond `bash` and a platform clipboard tool (`wl-paste`, `xclip`, or `pbpaste`) — please do not introduce new external dependencies without discussion.
 
 ## License
 

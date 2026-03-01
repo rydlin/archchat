@@ -14,14 +14,30 @@ if [[ "${BASH_VERSINFO[0]}" -lt 4 ]]; then
     exit 1
 fi
 
-# ── Check for wl-paste ───────────────────────────────────────────────────────
-if ! command -v wl-paste &>/dev/null; then
-    echo "Error: wl-paste not found (part of wl-clipboard)."
-    echo "Install it for your distribution:"
-    echo "  openSUSE:     sudo zypper install wl-clipboard"
-    echo "  Debian/Ubuntu: sudo apt install wl-clipboard"
-    echo "  Arch:          sudo pacman -S wl-clipboard"
-    exit 1
+# ── Check for clipboard tool ─────────────────────────────────────────────────
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    if ! command -v pbpaste &>/dev/null; then
+        echo "Error: pbpaste not found (should be included with macOS)."
+        exit 1
+    fi
+elif [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
+    if ! command -v wl-paste &>/dev/null; then
+        echo "Error: wl-paste not found (part of wl-clipboard)."
+        echo "Install it for your distribution:"
+        echo "  openSUSE:      sudo zypper install wl-clipboard"
+        echo "  Debian/Ubuntu: sudo apt install wl-clipboard"
+        echo "  Arch:          sudo pacman -S wl-clipboard"
+        exit 1
+    fi
+else
+    if ! command -v xclip &>/dev/null; then
+        echo "Error: xclip not found."
+        echo "Install it for your distribution:"
+        echo "  openSUSE:      sudo zypper install xclip"
+        echo "  Debian/Ubuntu: sudo apt install xclip"
+        echo "  Arch:          sudo pacman -S xclip"
+        exit 1
+    fi
 fi
 
 # ── Check for sha256sum ──────────────────────────────────────────────────────

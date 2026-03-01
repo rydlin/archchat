@@ -27,9 +27,9 @@ What actually happened. Include any error messages.
 ## Environment
 
 - **OS**: (e.g., openSUSE Tumbleweed, Arch Linux)
-- **Wayland compositor**: (e.g., Sway, KDE Plasma, GNOME)
+- **Display server / compositor**: (e.g., Wayland/Sway, X11/i3, macOS)
 - **Bash version**: (output of `bash --version`)
-- **wl-clipboard version**: (output of `wl-paste --version`)
+- **Clipboard tool and version**: (e.g., `wl-paste --version`, `xclip -version`, or `pbpaste`)
 
 ## Clipboard Content First Line
 
