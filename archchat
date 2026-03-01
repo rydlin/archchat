@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# archchat - Archive an AI chat from clipboard into Obsidian
+# Usage: archchat <subfolder>
+# Example: archchat vedikaos/http
+#
+# Set OBSIDIAN_AICHATS in your shell profile, e.g.:
+#   export OBSIDIAN_AICHATS="$HOME/Documents/obsidian-vault/AIChats"
+
+# ── Config ────────────────────────────────────────────────────────────────────
+AICHATS="${OBSIDIAN_AICHATS:-$HOME/Obsidian/AI Chats}"
+
+# ── Args ──────────────────────────────────────────────────────────────────────
+if [[ $# -lt 1 ]]; then
+    echo "Usage: archchat <subfolder>"
+    echo "Example: archchat vedikaos/http"
+    exit 1
+fi
+
+SUBFOLDER="$1"
+
+# ── Get clipboard content ─────────────────────────────────────────────────────
+CONTENT="$(wl-paste 2>/dev/null)"
+if [[ $? -ne 0 || -z "$CONTENT" ]]; then
+    echo "Error: wl-paste failed or clipboard is empty."
+    exit 1
+fi
+
+# Strip carriage returns (Windows/browser line endings)
+CONTENT="$(printf '%s' "$CONTENT" | tr -d '\r')"
+
+# ── Parse first line for URL ──────────────────────────────────────────────────
+FIRST_LINE="$(printf '%s' "$CONTENT" | head -n1)"
+
+if [[ "$FIRST_LINE" =~ ^"Original URL: "(.+)$ ]]; then
+    SOURCE_URL="${BASH_REMATCH[1]}"
+else
+    echo "Error: First line of clipboard must be:"
+    echo "  Original URL: <url>"
+    echo "Got: [$FIRST_LINE]"
+    exit 1
+fi
+
+# ── Detect agent from URL domain ──────────────────────────────────────────────
+case "$SOURCE_URL" in
+    *claude.ai*)         AGENT="claude"    ;;
+    *grok.com*)          AGENT="grok"      ;;
+    *chatgpt.com*|\
+    *chat.openai.com*)   AGENT="chatgpt"   ;;
+    *gemini.google.com*) AGENT="gemini"    ;;
+    *deepseek.com*)      AGENT="deepseek"  ;;
+    *perplexity.ai*)     AGENT="perplexity";;
+    *)
+        AGENT="$(echo "$SOURCE_URL" | sed 's|https\?://||;s|/.*||;s|www\.||;s|\..*||')"
+        echo "Warning: Unknown agent domain, using '$AGENT'"
+        ;;
+esac
+
+# ── Resolve subfolder with case-insensitive dir matching ──────────────────────
+RESOLVED=""
+IFS='/' read -ra PARTS <<< "$SUBFOLDER"
+
+for PART in "${PARTS[@]}"; do
+    SEARCH_IN="${AICHATS}${RESOLVED:+/$RESOLVED}"
+    PART_LOWER="${PART,,}"
+    MATCHED=""
+
+    if [[ -d "$SEARCH_IN" ]]; then
+        for ENTRY in "$SEARCH_IN"/*/; do
+            [[ -e "$ENTRY" ]] || continue
+            BASENAME="$(basename "$ENTRY")"
+            if [[ "${BASENAME,,}" == "$PART_LOWER" ]]; then
+                MATCHED="$BASENAME"
+                break
+            fi
+        done
+    fi
+
+    if [[ -n "$MATCHED" ]]; then
+        RESOLVED="${RESOLVED:+$RESOLVED/}$MATCHED"
+    else
+        RESOLVED="${RESOLVED:+$RESOLVED/}$PART"
+    fi
+done
+
+# ── Derive slug and project ───────────────────────────────────────────────────
+SLUG="$(basename "$RESOLVED")"
+PROJECT="$(echo "$RESOLVED" | cut -d'/' -f1)"
+
+# ── Derive file path ──────────────────────────────────────────────────────────
+DATE="$(date +%Y-%m-%d)"
+TIME="$(date +%H:%M)"
+URLHASH="$(printf '%s' "$SOURCE_URL" | sha256sum | cut -c1-8)"
+FILENAME="${DATE}--${AGENT}--${SLUG}--${URLHASH}.md"
+DIRPATH="${AICHATS}/${RESOLVED}"
+FILEPATH="${DIRPATH}/${FILENAME}"
+
+# ── Create directory if needed ────────────────────────────────────────────────
+mkdir -p "$DIRPATH" || { echo "Error: Could not create directory: $DIRPATH"; exit 1; }
+
+# ── Write frontmatter ─────────────────────────────────────────────────────────
+{
+    printf '%s\n' "---"
+    printf '%s\n' "date: ${DATE}"
+    printf '%s\n' "time: ${TIME}"
+    printf '%s\n' "agent: ${AGENT}"
+    printf '%s\n' "topic: \"${SLUG}\""
+    printf '%s\n' "project: ${PROJECT}"
+    printf '%s\n' "source_url: \"${SOURCE_URL}\""
+    printf '%s\n' "last_reviewed: ${DATE}"
+    printf '%s\n' "tags: [ai-chat]"
+    printf '%s\n' "status: active"
+    printf '%s\n' "---"
+    printf '\n'
+    printf '%s\n' "# ${SLUG}"
+    printf '\n'
+    printf '%s\n' "$CONTENT"
+} > "$FILEPATH" || { echo "Error: Could not write file: $FILEPATH"; exit 1; }
+
+# ── Done ──────────────────────────────────────────────────────────────────────
+echo "Agent  : $AGENT"
+echo "Project: $PROJECT"
+echo "Slug   : $SLUG"
+echo "Saved  : $FILEPATH"
