@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com),
 and this project adheres to [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Changed
+
+- Clipboard detection now prefers available tools over display environment (Wayland `wl-paste`, then X11 `xclip`/`xsel`, macOS `pbpaste`)
+- Hashing now supports `sha256sum` or `shasum -a 256` for broader platform compatibility
+- Bash requirement lowered to 3.2 by removing case-conversion dependency
+
 ## [1.1.0] - 2026-03-01
 
 ### Added

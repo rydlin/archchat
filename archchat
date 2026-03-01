@@ -18,20 +18,56 @@ fi
 
 SUBFOLDER="$1"
 
-# ── Detect clipboard command ──────────────────────────────────────────────────
-if [[ "$(uname -s)" == "Darwin" ]]; then
-    PASTE_CMD="pbpaste"
-elif [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
-    PASTE_CMD="wl-paste"
-else
-    PASTE_CMD="xclip -selection clipboard -o"
-fi
+# ── Helpers ──────────────────────────────────────────────────────────────────
+lower() {
+    printf '%s' "$1" | tr '[:upper:]' '[:lower:]'
+}
 
-if ! command -v "${PASTE_CMD%% *}" &>/dev/null; then
-    echo "Error: ${PASTE_CMD%% *} not found."
+hash256() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum
+    elif command -v shasum >/dev/null 2>&1; then
+        shasum -a 256
+    else
+        echo "Error: sha256sum or shasum not found."
+        exit 1
+    fi
+}
+
+detect_paste_cmd() {
+    local os
+    os="$(uname -s)"
+
+    if [[ "$os" == "Darwin" ]]; then
+        if command -v pbpaste >/dev/null 2>&1; then
+            echo "pbpaste"
+            return 0
+        fi
+    else
+        if command -v wl-paste >/dev/null 2>&1; then
+            echo "wl-paste"
+            return 0
+        fi
+        if command -v xclip >/dev/null 2>&1; then
+            echo "xclip -selection clipboard -o"
+            return 0
+        fi
+        if command -v xsel >/dev/null 2>&1; then
+            echo "xsel --clipboard --output"
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+# ── Detect clipboard command ──────────────────────────────────────────────────
+PASTE_CMD="$(detect_paste_cmd)"
+if [[ -z "$PASTE_CMD" ]]; then
+    echo "Error: No clipboard tool found."
     echo "Install a clipboard tool for your platform:"
     echo "  Wayland: wl-clipboard (wl-paste)"
-    echo "  X11:     xclip"
+    echo "  X11:     xclip or xsel"
     echo "  macOS:   pbpaste (included with macOS)"
     exit 1
 fi
@@ -79,14 +115,14 @@ IFS='/' read -ra PARTS <<< "$SUBFOLDER"
 
 for PART in "${PARTS[@]}"; do
     SEARCH_IN="${AICHATS}${RESOLVED:+/$RESOLVED}"
-    PART_LOWER="${PART,,}"
+    PART_LOWER="$(lower "$PART")"
     MATCHED=""
 
     if [[ -d "$SEARCH_IN" ]]; then
         for ENTRY in "$SEARCH_IN"/*/; do
             [[ -e "$ENTRY" ]] || continue
             BASENAME="$(basename "$ENTRY")"
-            if [[ "${BASENAME,,}" == "$PART_LOWER" ]]; then
+            if [[ "$(lower "$BASENAME")" == "$PART_LOWER" ]]; then
                 MATCHED="$BASENAME"
                 break
             fi
@@ -107,7 +143,7 @@ PROJECT="$(echo "$RESOLVED" | cut -d'/' -f1)"
 # ── Derive file path ──────────────────────────────────────────────────────────
 DATE="$(date +%Y-%m-%d)"
 TIME="$(date +%H:%M)"
-URLHASH="$(printf '%s' "$SOURCE_URL" | sha256sum | cut -c1-8)"
+URLHASH="$(printf '%s' "$SOURCE_URL" | hash256 | cut -c1-8)"
 FILENAME="${DATE}--${AGENT}--${SLUG}--${URLHASH}.md"
 DIRPATH="${AICHATS}/${RESOLVED}"
 FILEPATH="${DIRPATH}/${FILENAME}"
