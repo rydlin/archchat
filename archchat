@@ -82,6 +82,82 @@ fi
 # Strip carriage returns (Windows/browser line endings)
 CONTENT="$(printf '%s' "$CONTENT" | tr -d '\r')"
 
+# ── URL canonicalization ──────────────────────────────────────────────────────
+get_canonical_url() {
+    local url="$1"
+
+    # Strip fragment and query string
+    url="${url%%#*}"
+    url="${url%%\?*}"
+
+    # Extract scheme
+    local scheme="${url%%://*}"
+    scheme="$(printf '%s' "$scheme" | tr '[:upper:]' '[:lower:]')"
+    local rest="${url#*://}"
+
+    # Strip userinfo if present
+    if [[ "$rest" == *@* ]]; then
+        local userhost="${rest%%/*}"
+        if [[ "$userhost" == *@* ]]; then
+            rest="${userhost#*@}${rest#"$userhost"}"
+        fi
+    fi
+
+    # Split host(:port) from path
+    local hostport path
+    if [[ "$rest" == */* ]]; then
+        hostport="${rest%%/*}"
+        path="/${rest#*/}"
+    else
+        hostport="$rest"
+        path="/"
+    fi
+
+    # Lowercase host
+    local host port=""
+    if [[ "$hostport" == *:* ]]; then
+        host="${hostport%%:*}"
+        port="${hostport#*:}"
+    else
+        host="$hostport"
+    fi
+    host="$(printf '%s' "$host" | tr '[:upper:]' '[:lower:]')"
+
+    # Remove default ports
+    if [[ ("$scheme" == "http" && "$port" == "80") || \
+          ("$scheme" == "https" && "$port" == "443") ]]; then
+        port=""
+    fi
+
+    # Normalize path: collapse // → /, remove /./
+    path="$(printf '%s' "$path" | sed 's|/\+|/|g; s|/\./|/|g; s|/\.$|/|')"
+
+    # Resolve /../ segments
+    local -a segments=()
+    local seg
+    IFS='/' read -ra parts <<< "$path"
+    for seg in "${parts[@]}"; do
+        if [[ "$seg" == ".." ]]; then
+            [[ ${#segments[@]} -gt 0 ]] && unset 'segments[${#segments[@]}-1]'
+        elif [[ -n "$seg" ]]; then
+            segments+=("$seg")
+        fi
+    done
+
+    if [[ ${#segments[@]} -gt 0 ]]; then
+        path="/$(IFS='/'; printf '%s' "${segments[*]}")"
+    else
+        path="/"
+    fi
+
+    # Reconstruct
+    if [[ -n "$port" ]]; then
+        printf '%s' "${scheme}://${host}:${port}${path}"
+    else
+        printf '%s' "${scheme}://${host}${path}"
+    fi
+}
+
 # ── Parse first line for URL ──────────────────────────────────────────────────
 FIRST_LINE="$(printf '%s' "$CONTENT" | head -n1)"
 
@@ -94,8 +170,11 @@ else
     exit 1
 fi
 
+# ── Canonicalize URL for stable hashing and matching ─────────────────────────
+CANONICAL_URL="$(get_canonical_url "$SOURCE_URL")"
+
 # ── Detect agent from URL domain ──────────────────────────────────────────────
-case "$SOURCE_URL" in
+case "$CANONICAL_URL" in
     *claude.ai*)         AGENT="claude"    ;;
     *grok.com*)          AGENT="grok"      ;;
     *chatgpt.com*|\
@@ -104,7 +183,7 @@ case "$SOURCE_URL" in
     *deepseek.com*)      AGENT="deepseek"  ;;
     *perplexity.ai*)     AGENT="perplexity";;
     *)
-        AGENT="$(echo "$SOURCE_URL" | sed 's|https\?://||;s|/.*||;s|www\.||;s|\..*||')"
+        AGENT="$(echo "$CANONICAL_URL" | sed 's|https\?://||;s|/.*||;s|www\.||;s|\..*||')"
         echo "Warning: Unknown agent domain, using '$AGENT'"
         ;;
 esac
@@ -143,7 +222,7 @@ PROJECT="$(echo "$RESOLVED" | cut -d'/' -f1)"
 # ── Derive file path ──────────────────────────────────────────────────────────
 DATE="$(date +%Y-%m-%d)"
 TIME="$(date +%H:%M)"
-URLHASH="$(printf '%s' "$SOURCE_URL" | hash256 | cut -c1-8)"
+URLHASH="$(printf '%s' "$CANONICAL_URL" | hash256 | cut -c1-8)"
 FILENAME="${DATE}--${AGENT}--${SLUG}--${URLHASH}.md"
 DIRPATH="${AICHATS}/${RESOLVED}"
 FILEPATH="${DIRPATH}/${FILENAME}"
