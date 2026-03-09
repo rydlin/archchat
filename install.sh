@@ -1,10 +1,28 @@
 #!/usr/bin/env bash
-# install.sh - Install archchat to ~/bin/
+# install.sh - Install archchat to a user bin directory
 set -euo pipefail
+
+pick_install_dir() {
+    local candidates=("$HOME/bin" "$HOME/.local/bin")
+    # Prefer existing dirs that are already in PATH
+    for dir in "${candidates[@]}"; do
+        if [[ -d "$dir" && ":$PATH:" == *":$dir:"* ]]; then
+            echo "$dir"; return
+        fi
+    done
+    # Fall back to any candidate in PATH (not yet created)
+    for dir in "${candidates[@]}"; do
+        if [[ ":$PATH:" == *":$dir:"* ]]; then
+            echo "$dir"; return
+        fi
+    done
+    # Fallback: use ~/.local/bin (XDG standard)
+    echo "$HOME/.local/bin"
+}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE="${SCRIPT_DIR}/archchat"
-DEST_DIR="$HOME/bin"
+DEST_DIR="${1:-$(pick_install_dir)}"
 DEST="${DEST_DIR}/archchat"
 
 # ── Check bash version ───────────────────────────────────────────────────────
@@ -49,7 +67,7 @@ if [[ ! -f "$SOURCE" ]]; then
     exit 1
 fi
 
-# ── Create ~/bin if needed ───────────────────────────────────────────────────
+# ── Create dest dir if needed ────────────────────────────────────────────────
 if [[ ! -d "$DEST_DIR" ]]; then
     mkdir -p "$DEST_DIR"
     echo "Created ${DEST_DIR}/"
@@ -66,10 +84,10 @@ if [[ ":$PATH:" != *":$DEST_DIR:"* ]]; then
     echo "Add it by appending this line to your shell profile:"
     echo ""
     echo "  # For bash (~/.bashrc):"
-    echo "  export PATH=\"\$HOME/bin:\$PATH\""
+    echo "  export PATH=\"${DEST_DIR}:\$PATH\""
     echo ""
     echo "  # For zsh (~/.zshrc):"
-    echo "  export PATH=\"\$HOME/bin:\$PATH\""
+    echo "  export PATH=\"${DEST_DIR}:\$PATH\""
     echo ""
     echo "Then reload your shell: source ~/.bashrc  (or source ~/.zshrc)"
 fi
