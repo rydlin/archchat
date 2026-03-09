@@ -17,12 +17,12 @@ archchat is a command-line tool that takes an AI chat conversation from your cli
 ## Requirements
 
 - Linux (Wayland or X11) or macOS
-- `bash` >= 4.0
+- `bash` >= 3.2
 - A clipboard tool (auto-detected):
   - **Wayland**: `wl-clipboard` (provides `wl-paste`)
-  - **X11**: `xclip`
+  - **X11**: `xclip` or `xsel`
   - **macOS**: `pbpaste` (included with macOS)
-- `sha256sum` (coreutils)
+- A SHA-256 tool: `sha256sum` or `shasum -a 256`
 - [YourAIScroll](docs/youraiscroll.md) browser extension (Chrome/Firefox/Edge)
 - [Obsidian](https://obsidian.md) (recommended, but any directory works)
 
@@ -149,7 +149,7 @@ This removes `~/bin/archchat`. Your archived chat files are not affected.
 
 Contributions are welcome. Fork the repository, create a feature branch, and open a pull request. See the [pull request template](.github/PULL_REQUEST_TEMPLATE.md) for the checklist.
 
-The script intentionally has no dependencies beyond `bash` and a platform clipboard tool (`wl-paste`, `xclip`, or `pbpaste`) — please do not introduce new external dependencies without discussion.
+The script intentionally has no dependencies beyond `bash`, a clipboard tool (`wl-paste`, `xclip`, `xsel`, or `pbpaste`), and a SHA-256 tool (`sha256sum` or `shasum`) — please do not introduce new external dependencies without discussion.
 
 ## License
 

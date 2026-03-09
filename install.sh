@@ -8,9 +8,9 @@ DEST_DIR="$HOME/bin"
 DEST="${DEST_DIR}/archchat"
 
 # ── Check bash version ───────────────────────────────────────────────────────
-if [[ "${BASH_VERSINFO[0]}" -lt 4 ]]; then
-    echo "Error: bash >= 4.0 is required (found ${BASH_VERSION})."
-    echo "archchat uses features like \${var,,} and BASH_REMATCH."
+if [[ "${BASH_VERSINFO[0]}" -lt 3 ]] || \
+   { [[ "${BASH_VERSINFO[0]}" -eq 3 ]] && [[ "${BASH_VERSINFO[1]}" -lt 2 ]]; }; then
+    echo "Error: bash >= 3.2 is required (found ${BASH_VERSION})."
     exit 1
 fi
 
@@ -20,29 +20,26 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
         echo "Error: pbpaste not found (should be included with macOS)."
         exit 1
     fi
-elif [[ -n "${WAYLAND_DISPLAY:-}" ]]; then
-    if ! command -v wl-paste &>/dev/null; then
-        echo "Error: wl-paste not found (part of wl-clipboard)."
-        echo "Install it for your distribution:"
-        echo "  openSUSE:      sudo zypper install wl-clipboard"
-        echo "  Debian/Ubuntu: sudo apt install wl-clipboard"
-        echo "  Arch:          sudo pacman -S wl-clipboard"
-        exit 1
-    fi
 else
-    if ! command -v xclip &>/dev/null; then
-        echo "Error: xclip not found."
-        echo "Install it for your distribution:"
-        echo "  openSUSE:      sudo zypper install xclip"
-        echo "  Debian/Ubuntu: sudo apt install xclip"
-        echo "  Arch:          sudo pacman -S xclip"
+    if command -v wl-paste &>/dev/null; then
+        :
+    elif command -v xclip &>/dev/null; then
+        :
+    elif command -v xsel &>/dev/null; then
+        :
+    else
+        echo "Error: No clipboard tool found."
+        echo "Install a clipboard tool for your platform:"
+        echo "  Wayland: wl-clipboard (wl-paste)"
+        echo "  X11:     xclip or xsel"
         exit 1
     fi
 fi
 
-# ── Check for sha256sum ──────────────────────────────────────────────────────
-if ! command -v sha256sum &>/dev/null; then
-    echo "Error: sha256sum not found (part of coreutils)."
+# ── Check for sha256sum or shasum ────────────────────────────────────────────
+if ! command -v sha256sum &>/dev/null && ! command -v shasum &>/dev/null; then
+    echo "Error: sha256sum or shasum not found."
+    echo "Install coreutils (Linux) or ensure shasum is available (macOS)."
     exit 1
 fi
 
